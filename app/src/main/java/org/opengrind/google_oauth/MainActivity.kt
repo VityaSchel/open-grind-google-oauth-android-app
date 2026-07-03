@@ -1,6 +1,5 @@
 package org.opengrind.google_oauth
 
-import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -19,7 +18,7 @@ import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoView
 import org.mozilla.geckoview.WebExtension
 
-class MainActivity : ComponentActivity() {
+open class MainActivity : ComponentActivity() {
 
     private lateinit var runtime: GeckoRuntime
     private lateinit var geckoView: GeckoView
@@ -87,22 +86,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun onToken(token: String) {
-        if (callingActivity != null) {
-            setResult(RESULT_OK, Intent().putExtra(EXTRA_TOKEN, token))
-            finish()
-        } else {
-            geckoView.setSession(session)
-            session.loadUri("$TOKEN_PAGE_URL#${Uri.encode(token)}")
-        }
+    protected open fun onToken(token: String) {
+        geckoView.setSession(session)
+        session.loadUri("$TOKEN_PAGE_URL#${Uri.encode(token)}")
     }
 
-    private fun onError(error: String) {
+    protected open fun onError(error: String) {
         Log.e(TAG, "extension error: $error")
-        if (callingActivity != null) {
-            setResult(RESULT_CANCELED)
-            finish()
-        }
     }
 
     private val popupPromptDelegate = object : GeckoSession.PromptDelegate {
