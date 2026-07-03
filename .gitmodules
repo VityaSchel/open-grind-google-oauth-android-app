@@ -1,0 +1,3 @@
+[submodule "extension"]
+	path = extension
+	url = https://git.opengrind.org/open-grind/grindr-google-oauth-webextension.git

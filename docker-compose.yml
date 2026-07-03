@@ -1,0 +1,17 @@
+services:
+  build:
+    platform: linux/amd64
+    build:
+      context: .
+    image: grindr-google-oauth-build
+    init: true
+    working_dir: /work
+    volumes:
+      - .:/work
+      - grindr-nix:/nix
+      - grindr-gradle:/root/.gradle
+    command: ["nix", "run", ".#build-android"]
+
+volumes:
+  grindr-nix:
+  grindr-gradle:

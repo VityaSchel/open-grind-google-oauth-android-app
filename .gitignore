@@ -1,0 +1,22 @@
+*.iml
+.gradle
+/local.properties
+/.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Android signing
+keystore.properties
+*.jks
+*.keystore
+
+.local
+
+# Nix
+/result
+/result-*
+.direnv
