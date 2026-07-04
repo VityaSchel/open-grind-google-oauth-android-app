@@ -35,9 +35,11 @@ There aren't many choices: for Android only Chromium WebView and Mozilla's Gecko
 2. Many users won't even need to ever sign in with Google, so adding 100MB+ to app size just to render one page isn't practical.
 3. Additionally, publishing an app to F-Droid's official repository requires building every dependency from source, and building GeckoView takes hours even on powerful machines — this is why you [don't see any apps with GeckoView in the F-Droid repository](https://forum.f-droid.org/t/clean-build-with-geckoview-dependency/11066) (except for browsers such as Fennec and Tor); also GeckoView includes Google Services, so we'd have to patch it before building from source
 
+**Each CPU architecture adds ~100MB to the universal bundle. So Open Grind apk grows from ~70MB to ~500MB just for one page used once only by some people.**
+
 ## Can we bundle GeckoView with Android app and render the app itself in it?
 
-No, Tauri's [wry](https://github.com/tauri-apps/wry) only works with system's WebView (i.e Chromium). So we'd have to bundle a 100MB+ WebView library *just* to render one Google OAuth page, which most users won't even ever see once.
+No, Tauri's [wry](https://github.com/tauri-apps/wry) only works with system's WebView (i.e Chromium).
 
 ## How do we solve all these issues?
 
@@ -45,13 +47,13 @@ To solve these Google OAuth issues, we've built the [Grindr Google OAuth WebExte
 
 ## So why build an app if it's an extension?
 
-The whole app is basically a headless browser powered by [GeckoView](https://mozilla.github.io/geckoview/) embedding the extension. The reason is simply because most Android users don't have Firefox and use Google Chrome for Android instead, which does not support installing extensions.
+The whole app is basically a headless browser powered by [GeckoView](https://mozilla.github.io/geckoview/) embedding the extension. The reason is simply because most Android users don't have Firefox and use Google Chrome for Android instead, which does not support extensions.
 
 Also, the app features a programmatic intent, which allows the Open Grind app to call this app and get the token back automatically without copy-pasting. For security, this only works if both apps are signed by the same JKS.
 
 If you're *advanced user* and prefer to avoid installing unnecessary app, consider using the browser extension directly and copy-pasting the token into Open Grind app.
 
-</detials>
+</details>
 
 ## Download
 
