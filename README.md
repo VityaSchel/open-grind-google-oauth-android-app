@@ -2,7 +2,7 @@
 
 An Android companion app that obtains a Google OAuth token for signing in to third-party Grindr clients such as [Open Grind](https://git.opengrind.org/open-grind/open-grind).
 
-Powered by [GeckoView](https://mozilla.github.io/geckoview/) and [Grindr Google OAuth WebExtension](https://git.opengrind.org/open-grind/grindr-google-oauth-webextension).
+The whole app is basically a headless browser powered by [GeckoView](https://mozilla.github.io/geckoview/) embedding the [Grindr Google OAuth WebExtension](https://git.opengrind.org/open-grind/grindr-google-oauth-webextension). If you're *advanced user* and prefer to avoid installing unnecessary app, consider using the browser extension directly.
 
 ## Download
 
