@@ -15,7 +15,9 @@ import org.mozilla.geckoview.GeckoResult
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoRuntimeSettings
 import org.mozilla.geckoview.GeckoSession
+import org.mozilla.geckoview.GeckoSessionSettings
 import org.mozilla.geckoview.GeckoView
+import org.mozilla.geckoview.StorageController
 import org.mozilla.geckoview.WebExtension
 
 open class MainActivity : ComponentActivity() {
@@ -47,7 +49,7 @@ open class MainActivity : ComponentActivity() {
         runtime = GeckoRuntime.getDefault(this)
         runtime.settings.preferredColorScheme = GeckoRuntimeSettings.COLOR_SCHEME_DARK
 
-        session = GeckoSession().apply {
+        session = GeckoSession(privateSessionSettings()).apply {
             navigationDelegate = newSessionDelegate
             promptDelegate = popupPromptDelegate
         }
@@ -56,8 +58,12 @@ open class MainActivity : ComponentActivity() {
 
         runtime.webExtensionController
             .ensureBuiltIn(EXTENSION_URL, EXTENSION_ID)
-            .accept({ extension ->
+            .then<WebExtension> { extension ->
                 extension?.setMessageDelegate(messageDelegate, NATIVE_APP)
+                runtime.webExtensionController
+                    .setAllowedInPrivateBrowsing(extension!!, true)
+            }
+            .accept({
                 session.loadUri(HELPER_URL)
             }, { e ->
                 Log.e(TAG, "extension install failed", e)
@@ -67,8 +73,12 @@ open class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         popupSession?.close()
         session.close()
+        runtime.storageController.clearData(StorageController.ClearFlags.ALL)
         super.onDestroy()
     }
+
+    private fun privateSessionSettings() =
+        GeckoSessionSettings.Builder().usePrivateMode(true).build()
 
     private val messageDelegate = object : WebExtension.MessageDelegate {
         override fun onMessage(
@@ -105,7 +115,7 @@ open class MainActivity : ComponentActivity() {
 
     private val newSessionDelegate = object : GeckoSession.NavigationDelegate {
         override fun onNewSession(session: GeckoSession, uri: String): GeckoResult<GeckoSession> {
-            val popup = GeckoSession()
+            val popup = GeckoSession(privateSessionSettings())
             popupSession = popup
             popup.contentDelegate = object : GeckoSession.ContentDelegate {
                 override fun onCloseRequest(session: GeckoSession) = closePopup()
