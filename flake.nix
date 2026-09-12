@@ -60,7 +60,6 @@
             JAVA_HOME = jdk.home;
             ANDROID_HOME = androidSdkRoot;
             ANDROID_SDK_ROOT = androidSdkRoot;
-            GRADLE_OPTS = "-Dorg.gradle.project.android.aapt2FromMavenOverride=${buildToolsBin}/aapt2";
           };
 
           envExports = pkgs.lib.concatStringsSep "\n" (
@@ -78,6 +77,10 @@
 
               ROOT="''${GRINDR_OAUTH_ROOT:-$PWD}"
               cd "$ROOT"
+
+              export GRADLE_USER_HOME="''${GRINDR_OAUTH_GRADLE_USER_HOME:-$HOME/.gradle-grindr-oauth}"
+              mkdir -p "$GRADLE_USER_HOME"
+              printf 'android.aapt2FromMavenOverride=%s/aapt2\n' "${buildToolsBin}" > "$GRADLE_USER_HOME/gradle.properties"
 
               if [ ! -e extension/geckoview/manifest.json ]; then
                 echo "error: the 'extension' submodule is not checked out." >&2

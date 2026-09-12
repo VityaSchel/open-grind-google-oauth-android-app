@@ -26,6 +26,7 @@ jobs:
     env:
       BUILD_ROOT: /work
       HOME: /root
+      GRINDR_OAUTH_GRADLE_USER_HOME: /root/.gradle-grindr-oauth
       TZ: UTC
       LC_ALL: C
     steps:
@@ -46,39 +47,48 @@ jobs:
         run: cd "${BUILD_ROOT:?}" && nix run .#build-android
       - name: Collect APKs
         run: |
-          cd "${BUILD_ROOT:?}"
+          : "${BUILD_ROOT:?}"
+          apks=("$BUILD_ROOT"/app/build/outputs/apk/release/*-release-unsigned.apk)
+          [ ${#apks[@]} -eq 3 ]
           mkdir -p out
-          cp app/build/outputs/apk/release/*-release-unsigned.apk out/
-          cd out && sha256sum *.apk | tee SHA256SUMS
+          cp "${apks[@]}" out/
       - name: Upload
         uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e
         with:
           name: unsigned-${{ matrix.provider }}
-          path: /work/out
+          path: out/
+          retention-days: 1
 
   compare:
     needs: build
     if: inputs.providers == 'all'
     runs-on: ["verify", "hetzner"]
-    timeout-minutes: 20
+    timeout-minutes: 12
     steps:
       - name: Download every builder's output
         uses: https://code.forgejo.org/forgejo/download-artifact@d8d0a99033603453ad2255e58720b460a0555e1e
         with:
           path: artifacts
       - name: Compare across builders
+        env:
+          BUILDERS: 3
         run: |
+          set -euo pipefail
           cd artifacts
-          status=0
+          found=$(ls -1d unsigned-*/ | wc -l)
+          if [ "$found" -ne "${BUILDERS:?}" ]; then
+            echo "expected $BUILDERS builder artifacts, downloaded $found"
+            ls -1d unsigned-*/ || true
+            exit 1
+          fi
           for abi in arm64-v8a armeabi-v7a x86_64; do
             apk="app-$abi-release-unsigned.apk"
-            hashes=$(sha256sum unsigned-*/"$apk" | awk '{print $1}' | sort -u)
-            if [ "$(echo "$hashes" | wc -l)" -eq 1 ]; then
-              echo "$abi: reproducible ($hashes)"
-            else
-              echo "$abi: NOT reproducible"
-              sha256sum unsigned-*/"$apk"
-              status=1
+            sums=$(sha256sum unsigned-*/"$apk")
+            if [ "$(echo "$sums" | wc -l)" -ne "$BUILDERS" ]; then
+              echo "$abi: expected $BUILDERS copies"; echo "$sums"; exit 1
             fi
+            if [ "$(echo "$sums" | awk '{print $1}' | sort -u | wc -l)" -ne 1 ]; then
+              echo "$abi: NOT reproducible"; echo "$sums"; exit 1
+            fi
+            echo "$abi: reproducible $(echo "$sums" | awk 'NR==1{print $1}')"
           done
-          exit $status
