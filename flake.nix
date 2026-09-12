@@ -53,6 +53,7 @@
             jdk
             androidSdk
             pkgs.coreutils
+            pkgs.minisign
           ];
 
           buildEnv = {
