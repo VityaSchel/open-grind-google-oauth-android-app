@@ -12,7 +12,7 @@ Open Grind Google OAuth supports reproducible builds. Read more in [BUILDING.md 
 
 ## Security
 
-Releases are signed with [Open Grind governance keys](https://git.opengrind.org/open-grind/open-grind/src/branch/main/KEYS.md); never install from unofficial sources.
+Releases are signed with [minisign](https://jedisct1.github.io/minisign/) and ship a detached `.minisig` — see [how to verify](https://git.opengrind.org/open-grind/open-grind/src/branch/main/BUILDING.md#verify-minisign-signature). Never install from unofficial sources.
 
 ## License
 

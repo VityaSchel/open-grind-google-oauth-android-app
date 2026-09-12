@@ -53,14 +53,20 @@ Prerequisites:
 
 ## Signing
 
-Must be the same keystore used for Open Grind releases.
+Must be the same keystore used for Open Grind releases, so that Open Grind recognizes this app by signature. Create it with the [keytool recipe](https://git.opengrind.org/open-grind/open-grind/src/branch/main/BUILDING.md#sign-android-build), then copy [contrib/keystore.properties.example](./contrib/keystore.properties.example).
 
 ```bash
 GRINDR_OAUTH_KEYSTORE_PROPERTIES=/home/you/.config/open-grind/keystore.properties \
   nix run .#build-android
 ```
 
+## Verifying a release
+
+Follow [Open Grind's § Verify minisign signature](https://git.opengrind.org/open-grind/open-grind/src/branch/main/BUILDING.md#verify-minisign-signature).
+
 ## Reproducibility
+
+Follow [Open Grind's REPRODUCIBILITY.md](https://git.opengrind.org/open-grind/open-grind/src/branch/main/REPRODUCIBILITY.md).
 
 | Component                                    | Pinned in                                  |
 | -------------------------------------------- | ------------------------------------------ |
