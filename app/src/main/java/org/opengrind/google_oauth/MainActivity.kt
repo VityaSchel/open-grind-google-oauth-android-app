@@ -1,10 +1,14 @@
 package org.opengrind.google_oauth
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
@@ -26,6 +30,8 @@ open class MainActivity : ComponentActivity() {
     private lateinit var geckoView: GeckoView
     private lateinit var session: GeckoSession
     private var popupSession: GeckoSession? = null
+    private var pendingToken: String? = null
+    private var openGrindHasTheToken = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(
@@ -97,8 +103,54 @@ open class MainActivity : ComponentActivity() {
     }
 
     protected open fun onToken(token: String) {
+        pendingToken = token
+        if (handBackToOpenGrind(token)) return
+        showTokenPage(token)
+    }
+
+    private fun showTokenPage(token: String) {
         geckoView.setSession(session)
         session.loadUri("$TOKEN_PAGE_URL#${Uri.encode(token)}")
+    }
+
+    private fun handBackToOpenGrind(token: String): Boolean {
+        if (!isOpenGrindTrusted()) return false
+        val intent = Intent()
+            .setClassName(OPEN_GRIND_PACKAGE, OPEN_GRIND_HANDOFF_ACTIVITY)
+            .putExtra(EXTRA_TOKEN, token)
+        return try {
+            handBackLauncher.launch(intent)
+            openGrindHasTheToken = true
+            true
+        } catch (e: ActivityNotFoundException) {
+            Log.i(TAG, "handoff unavailable", e)
+            false
+        } catch (e: SecurityException) {
+            Log.i(TAG, "handoff refused", e)
+            false
+        }
+    }
+
+    private fun isOpenGrindTrusted(): Boolean = try {
+        packageManager.getPackageInfo(OPEN_GRIND_PACKAGE, 0)
+        packageManager.checkSignatures(packageName, OPEN_GRIND_PACKAGE) ==
+            PackageManager.SIGNATURE_MATCH
+    } catch (e: PackageManager.NameNotFoundException) {
+        false
+    }
+
+    private val handBackLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != RESULT_OK) {
+            openGrindHasTheToken = false
+            pendingToken?.let { showTokenPage(it) }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (openGrindHasTheToken) finishAndRemoveTask()
     }
 
     protected open fun onError(error: String) {
@@ -140,5 +192,7 @@ open class MainActivity : ComponentActivity() {
         private const val EXTENSION_ID = "grindr-google-oauth-webextension@opengrind.org"
         private const val EXTENSION_URL = "resource://android/assets/grindr-google-oauth/"
         private const val TOKEN_PAGE_URL = EXTENSION_URL + "shared/token.html"
+        private const val OPEN_GRIND_PACKAGE = "org.opengrind"
+        private const val OPEN_GRIND_HANDOFF_ACTIVITY = "org.opengrind.TokenHandoffActivity"
     }
 }
