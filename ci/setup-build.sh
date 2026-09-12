@@ -3,7 +3,7 @@ set -eu
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get -qq update
-apt-get -qq install -y ca-certificates curl git xz-utils
+apt-get -qq install -y ca-certificates curl git nodejs xz-utils
 
 NIX_VERSION=2.26.3
 NIX_SHA256_X86_64=d378a057253fb98f05c3e7c431c1852cca6afae3376f5853a9fcb7ae423a05ad

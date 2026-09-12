@@ -58,8 +58,8 @@ jobs:
 
   compare:
     needs: build
-    if: always() && inputs.providers == 'all'
-    runs-on: ["build", "hetzner"]
+    if: inputs.providers == 'all'
+    runs-on: ["verify", "hetzner"]
     timeout-minutes: 20
     steps:
       - name: Download every builder's output
