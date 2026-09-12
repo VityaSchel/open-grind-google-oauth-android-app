@@ -1,0 +1,84 @@
+name: build
+
+on:
+  workflow_dispatch:
+    inputs:
+      providers:
+        description: builders to compare
+        type: choice
+        default: all
+        options: [all, cherry, vultr, hetzner]
+
+concurrency:
+  group: grindr-google-oauth-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: >-
+          ${{ fromJson(inputs.providers == 'all' && '["cherry","vultr","hetzner"]'
+          || format('["{0}"]', inputs.providers)) }}
+    runs-on: ["build", "${{ matrix.provider }}"]
+    timeout-minutes: 60
+    env:
+      BUILD_ROOT: /work
+      HOME: /root
+      TZ: UTC
+      LC_ALL: C
+    steps:
+      - name: Checkout
+        run: |
+          : "${BUILD_ROOT:?}"
+          rm -rf "$BUILD_ROOT"
+          mkdir -p "$BUILD_ROOT"
+          cd "$BUILD_ROOT"
+          git init -q .
+          git remote add origin "$FORGEJO_SERVER_URL/$FORGEJO_REPOSITORY.git"
+          git fetch -q --depth 1 origin "$FORGEJO_REF_NAME"
+          git checkout -q "$FORGEJO_SHA"
+          git submodule update --init --recursive
+      - name: Set up the build environment
+        run: cd "${BUILD_ROOT:?}" && sh ci/setup-build.sh
+      - name: Build
+        run: cd "${BUILD_ROOT:?}" && nix run .#build-android
+      - name: Collect APKs
+        run: |
+          cd "${BUILD_ROOT:?}"
+          mkdir -p out
+          cp app/build/outputs/apk/release/*-release-unsigned.apk out/
+          cd out && sha256sum *.apk | tee SHA256SUMS
+      - name: Upload
+        uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e
+        with:
+          name: unsigned-${{ matrix.provider }}
+          path: /work/out
+
+  compare:
+    needs: build
+    if: always() && inputs.providers == 'all'
+    runs-on: ["build", "hetzner"]
+    timeout-minutes: 20
+    steps:
+      - name: Download every builder's output
+        uses: https://code.forgejo.org/forgejo/download-artifact@d8d0a99033603453ad2255e58720b460a0555e1e
+        with:
+          path: artifacts
+      - name: Compare across builders
+        run: |
+          cd artifacts
+          status=0
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            apk="app-$abi-release-unsigned.apk"
+            hashes=$(sha256sum unsigned-*/"$apk" | awk '{print $1}' | sort -u)
+            if [ "$(echo "$hashes" | wc -l)" -eq 1 ]; then
+              echo "$abi: reproducible ($hashes)"
+            else
+              echo "$abi: NOT reproducible"
+              sha256sum unsigned-*/"$apk"
+              status=1
+            fi
+          done
+          exit $status
