@@ -74,6 +74,7 @@ jobs:
           BUILDERS: 3
         run: |
           set -euo pipefail
+          mkdir -p verified
           cd artifacts
           found=$(ls -1d unsigned-*/ | wc -l)
           if [ "$found" -ne "${BUILDERS:?}" ]; then
@@ -90,5 +91,12 @@ jobs:
             if [ "$(echo "$sums" | awk '{print $1}' | sort -u | wc -l)" -ne 1 ]; then
               echo "$abi: NOT reproducible"; echo "$sums"; exit 1
             fi
+            cp "$(echo "$sums" | awk 'NR==1{print $2}')" ../verified/"$apk"
             echo "$abi: reproducible $(echo "$sums" | awk 'NR==1{print $1}')"
           done
+          ls -1 ../verified
+      - name: Publish verified artifact
+        uses: https://code.forgejo.org/forgejo/upload-artifact@16871d9e8cfcf27ff31822cac382bbb5450f1e1e
+        with:
+          name: open-grind-google-oauth-unsigned
+          path: verified/
