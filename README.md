@@ -8,6 +8,8 @@ An Android companion app that obtains a Google OAuth token for signing in to thi
 
 See [BUILDING.md](./BUILDING.md).
 
+Open Grind supports reproducible builds. Read more in [BUILDING.md § Reproducibility](./BUILDING.md#reproducibility).
+
 ## Security
 
 Releases are signed with [Open Grind governance keys](https://git.opengrind.org/open-grind/open-grind/src/branch/main/KEYS.md); never install from unofficial sources.
