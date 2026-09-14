@@ -12,7 +12,7 @@ First read [BUILDING.md in Open Grind repository](https://git.opengrind.org/open
 Clone repository:
 
 ```bash
-git clone --recurse-submodules https://git.opengrind.org/open-grind/open-grind-google-oauth-android-app.git
+git clone --recurse-submodules https://git.opengrind.org/open-grind/google-oauth-app.git
 ```
 
 ## Build with Docker (easiest, Linux x86_64 only)
