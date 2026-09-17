@@ -4,12 +4,6 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <uses-permission android:name="org.opengrind.permission.RECEIVE_GOOGLE_TOKEN" />
-
-    <permission
-        android:name="org.opengrind.google_oauth.permission.REQUEST_TOKEN"
-        android:protectionLevel="signature" />
-
     <queries>
         <package android:name="org.opengrind" />
     </queries>
@@ -36,8 +30,7 @@
         <activity
             android:name=".RequestTokenActivity"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode|density|fontScale|locale|layoutDirection"
-            android:exported="true"
-            android:permission="org.opengrind.google_oauth.permission.REQUEST_TOKEN">
+            android:exported="true">
             <intent-filter>
                 <action android:name="org.opengrind.google_oauth.action.REQUEST_TOKEN" />
 

@@ -1,13 +1,14 @@
 package org.opengrind.google_oauth
 
 import android.content.Intent
-import android.content.pm.PackageManager
 
 class RequestTokenActivity : MainActivity() {
 
+    override fun isLaunchAllowed(): Boolean = isTrustedOpenGrind(callingPackage)
+
     override fun onToken(token: String) {
-        if (!isTrustedCaller()) {
-            setResult(RESULT_CANCELED)
+        if (!isTrustedOpenGrind(callingPackage)) {
+            setResult(MainActivity.RESULT_REFUSED)
             finish()
             return
         }
@@ -19,16 +20,5 @@ class RequestTokenActivity : MainActivity() {
         super.onError(error)
         setResult(RESULT_CANCELED)
         finish()
-    }
-
-    private fun isTrustedCaller(): Boolean {
-        val caller = callingPackage ?: return false
-        if (caller != TRUSTED_CALLER_PACKAGE) return false
-        return packageManager.checkSignatures(caller, packageName) ==
-            PackageManager.SIGNATURE_MATCH
-    }
-
-    private companion object {
-        const val TRUSTED_CALLER_PACKAGE = "org.opengrind"
     }
 }

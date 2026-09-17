@@ -53,7 +53,9 @@ Prerequisites:
 
 ## Signing
 
-Must be the same keystore used for Open Grind releases, so that Open Grind recognizes this app by signature. Create it with the [keytool recipe](https://git.opengrind.org/open-grind/open-grind/src/branch/main/BUILDING.md#sign-android-build), then copy [contrib/keystore.properties.example](./contrib/keystore.properties.example).
+Official releases are signed with the Open Grind release keystore. Open Grind sends token requests only to a Google OAuth app signed with that key, and this app answers only Open Grind builds whose certificate SHA-256 is listed in `SIGNING_CERTS_SHA256` in [OpenGrindTrust.kt](./app/src/main/java/org/opengrind/google_oauth/OpenGrindTrust.kt): the Open Grind release key and Google Play's app signing key.
+
+To sign with your own key, create a keystore with the [keytool recipe](https://git.opengrind.org/open-grind/open-grind/src/branch/main/BUILDING.md#sign-android-build), then copy [contrib/keystore.properties.example](./contrib/keystore.properties.example). Token requests and hand-back between your own builds work only after you add your certificate's SHA-256 to `SIGNING_CERTS_SHA256` and set it as `RELEASE_CERT_SHA256` in Open Grind's [InstallGate.kt](https://git.opengrind.org/open-grind/open-grind/src/branch/main/src-tauri/android-logic/src/main/kotlin/org/opengrind/update/InstallGate.kt).
 
 ```bash
 GRINDR_OAUTH_KEYSTORE_PROPERTIES=/home/you/.config/open-grind/keystore.properties \

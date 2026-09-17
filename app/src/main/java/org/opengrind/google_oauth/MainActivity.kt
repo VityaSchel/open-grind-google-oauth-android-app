@@ -1,5 +1,6 @@
 package org.opengrind.google_oauth
 
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -39,6 +40,11 @@ open class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
         )
         super.onCreate(savedInstanceState)
+        if (!isLaunchAllowed()) {
+            setResult(RESULT_REFUSED)
+            finish()
+            return
+        }
         setContentView(R.layout.activity_main)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -76,10 +82,27 @@ open class MainActivity : ComponentActivity() {
             })
     }
 
+    protected open fun isLaunchAllowed(): Boolean = true
+
+    protected fun isTrustedOpenGrind(packageName: String?): Boolean =
+        OpenGrindTrust.trusts(
+            packageName = packageName,
+            certificates = { openGrind, sha256 ->
+                packageManager.hasSigningCertificate(
+                    openGrind,
+                    sha256,
+                    PackageManager.CERT_INPUT_SHA256,
+                )
+            },
+        )
+
     override fun onDestroy() {
-        popupSession?.close()
-        session.close()
-        runtime.storageController.clearData(StorageController.ClearFlags.ALL)
+        if (::session.isInitialized) {
+            popupSession?.close()
+            session.close()
+            runtime.storageController
+                .clearData(StorageController.ClearFlags.ALL)
+        }
         super.onDestroy()
     }
 
@@ -114,9 +137,9 @@ open class MainActivity : ComponentActivity() {
     }
 
     private fun handBackToOpenGrind(token: String): Boolean {
-        if (!isOpenGrindTrusted()) return false
+        if (!isTrustedOpenGrind(OpenGrindTrust.PACKAGE)) return false
         val intent = Intent()
-            .setClassName(OPEN_GRIND_PACKAGE, OPEN_GRIND_HANDOFF_ACTIVITY)
+            .setClassName(OpenGrindTrust.PACKAGE, OPEN_GRIND_HANDOFF_ACTIVITY)
             .putExtra(EXTRA_TOKEN, token)
         return try {
             handBackLauncher.launch(intent)
@@ -129,14 +152,6 @@ open class MainActivity : ComponentActivity() {
             Log.i(TAG, "handoff refused", e)
             false
         }
-    }
-
-    private fun isOpenGrindTrusted(): Boolean = try {
-        packageManager.getPackageInfo(OPEN_GRIND_PACKAGE, 0)
-        packageManager.checkSignatures(packageName, OPEN_GRIND_PACKAGE) ==
-            PackageManager.SIGNATURE_MATCH
-    } catch (e: PackageManager.NameNotFoundException) {
-        false
     }
 
     private val handBackLauncher = registerForActivityResult(
@@ -185,6 +200,7 @@ open class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_TOKEN = "org.opengrind.google_oauth.extra.TOKEN"
+        const val RESULT_REFUSED = Activity.RESULT_FIRST_USER
 
         private const val TAG = "grindr-oauth"
         private const val HELPER_URL = "https://web.grindr.com/"
@@ -192,7 +208,6 @@ open class MainActivity : ComponentActivity() {
         private const val EXTENSION_ID = "grindr-google-oauth-webextension@opengrind.org"
         private const val EXTENSION_URL = "resource://android/assets/grindr-google-oauth/"
         private const val TOKEN_PAGE_URL = EXTENSION_URL + "shared/token.html"
-        private const val OPEN_GRIND_PACKAGE = "org.opengrind"
         private const val OPEN_GRIND_HANDOFF_ACTIVITY = "org.opengrind.TokenHandoffActivity"
     }
 }
