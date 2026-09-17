@@ -21,7 +21,7 @@ jobs:
         provider: >-
           ${{ fromJson(inputs.providers == 'all' && '["cherry","vultr","hetzner"]'
           || format('["{0}"]', inputs.providers)) }}
-    runs-on: ["build", "${{ matrix.provider }}"]
+    runs-on: ["debian", "4c8g", "${{ matrix.provider }}"]
     timeout-minutes: 60
     env:
       BUILD_ROOT: /work
@@ -62,7 +62,7 @@ jobs:
   compare:
     needs: build
     if: inputs.providers == 'all'
-    runs-on: ["verify", "hetzner"]
+    runs-on: ["toolchain", "4c8g", "hetzner"]
     timeout-minutes: 12
     steps:
       - name: Download every builder's output
