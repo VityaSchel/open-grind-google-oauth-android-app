@@ -31,6 +31,7 @@ open class MainActivity : ComponentActivity() {
     private lateinit var geckoView: GeckoView
     private lateinit var session: GeckoSession
     private var popupSession: GeckoSession? = null
+    private var extension: WebExtension? = null
     private var pendingToken: String? = null
     private var openGrindHasTheToken = false
 
@@ -70,16 +71,26 @@ open class MainActivity : ComponentActivity() {
 
         runtime.webExtensionController
             .ensureBuiltIn(EXTENSION_URL, EXTENSION_ID)
-            .then<WebExtension> { extension ->
-                extension?.setMessageDelegate(messageDelegate, NATIVE_APP)
+            .then<WebExtension> { installed ->
+                extension = installed
+                bindMessageDelegate()
                 runtime.webExtensionController
-                    .setAllowedInPrivateBrowsing(extension!!, true)
+                    .setAllowedInPrivateBrowsing(installed!!, true)
             }
             .accept({
                 session.loadUri(HELPER_URL)
             }, { e ->
                 Log.e(TAG, "extension install failed", e)
             })
+    }
+
+    override fun onResume() {
+        super.onResume()
+        bindMessageDelegate()
+    }
+
+    private fun bindMessageDelegate() {
+        extension?.setMessageDelegate(messageDelegate, NATIVE_APP)
     }
 
     protected open fun isLaunchAllowed(): Boolean = true
@@ -114,21 +125,29 @@ open class MainActivity : ComponentActivity() {
             nativeApp: String,
             message: Any,
             sender: WebExtension.MessageSender,
-        ): GeckoResult<Any>? {
-            (message as? JSONObject)?.let { msg ->
-                when (msg.optString("type")) {
-                    "token" -> onToken(msg.optString("token"))
-                    "error" -> onError(msg.optString("error"))
+        ): GeckoResult<Any> {
+            val msg = message as? JSONObject ?: return refuse("message is not an object")
+            return when (msg.optString("type")) {
+                "token" -> takeToken(msg.optString("token"))
+                "error" -> {
+                    onError(msg.optString("error"))
+                    GeckoResult.fromValue(true)
                 }
+                else -> refuse("unknown message type")
             }
-            return null
         }
     }
 
-    protected open fun onToken(token: String) {
+    private fun takeToken(token: String): GeckoResult<Any> =
+        if (token.isEmpty()) refuse("empty token") else onToken(token)
+
+    private fun refuse(reason: String): GeckoResult<Any> =
+        GeckoResult.fromException(IllegalArgumentException(reason))
+
+    protected open fun onToken(token: String): GeckoResult<Any> {
         pendingToken = token
-        if (handBackToOpenGrind(token)) return
-        showTokenPage(token)
+        if (!handBackToOpenGrind(token)) showTokenPage(token)
+        return GeckoResult.fromValue(true)
     }
 
     private fun showTokenPage(token: String) {
